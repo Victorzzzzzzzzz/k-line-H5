@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CoinW 极速挑战</title>
+    <style>
+        :root { --up: #00c087; --down: #ff3b5b; --gold: #f0b90b; --bg: #0b0e11; --panel: #1e2329; }
+        body { margin: 0; background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #fff; overflow: hidden; touch-action: manipulation; }
+        
+        /* 加载与引导层 */
+        #guide-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; transition: 0.4s; }
+        .guide-card { background: var(--panel); width: 80%; padding: 25px; border-radius: 16px; border: 1px solid var(--gold); text-align: center; }
+        .guide-step { display: flex; align-items: center; margin: 15px 0; font-size: 14px; text-align: left; }
+        .step-icon { width: 24px; height: 24px; background: var(--gold); color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px; font-weight: bold; flex-shrink: 0; }
+
+        /* 主界面 */
+        #app { height: 100vh; display: flex; flex-direction: column; padding: 15px; box-sizing: border-box; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .price-live { font-family: 'Courier New', monospace; font-size: 32px; font-weight: bold; color: var(--up); line-height: 1; margin: 5px 0; }
+        
+        /* 图表区 */
+        #chart-wrap { flex: 1; position: relative; margin: 10px 0; overflow: hidden; }
+        canvas { width: 100%; height: 100%; }
+
+        /* 操作区 */
+        .controls { background: var(--bg); padding-top: 10px; }
+        .lev-selector { display: flex; gap: 8px; margin-bottom: 15px; }
+        .lev-btn { flex: 1; background: #2b3139; border: 1px solid transparent; color: #848e9c; padding: 10px 0; border-radius: 4px; font-size: 13px; transition: 0.2s; }
+        .lev-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(240,185,11,0.1); font-weight: bold; }
+        
+        .trade-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .btn { height: 55px; border: none; border-radius: 8px; color: #fff; font-size: 18px; font-weight: bold; cursor: pointer; position: relative; overflow: hidden; }
+        .btn-up { background: var(--up); box-shadow: 0 4px 15px rgba(0,192,135,0.3); }
+        .btn-down { background: var(--down); box-shadow: 0 4px 15px rgba(255,59,91,0.3); }
+        .btn:active { transform: scale(0.95); }
+
+        /* 结算弹窗 */
+        #result-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 2000; align-items: center; justify-content: center; }
+        .win-box { background: var(--panel); width: 85%; padding: 40px 20px; border-radius: 20px; text-align: center; border: 1px solid var(--gold); }
+        .pnl-percent { font-size: 64px; font-weight: bold; color: var(--up); margin: 10px 0; text-shadow: 0 0 20px rgba(0,192,135,0.4); }
+        .cta-btn { background: var(--gold); color: #000; display: block; padding: 16px; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 18px; margin-top: 25px; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+<div id="guide-overlay" onclick="startPlay()">
+    <div class="guide-card">
+        <h2 style="color: var(--gold); margin-top: 0;">CoinW 极速挑战</h2>
+        <div class="guide-step">
+            <div class="step-icon">1</div>
+            <div>观察 <b>BTC/USDT</b> 实时波动行情</div>
+        </div>
+        <div class="guide-step">
+            <div class="step-icon">2</div>
+            <div>选择 <b>5x - 125x</b> 杠杆倍数</div>
+        </div>
+        <div class="guide-step">
+            <div class="step-icon">3</div>
+            <div>预测 1 分钟后价格<b>看涨</b>或<b>看跌</b></div>
+        </div>
+        <p style="font-size: 12px; color: #848e9c; margin-top: 20px;">点击任意位置开始体验</p>
+    </div>
+</div>
+
+<div id="app">
+    <div class="header">
+        <div>
+            <div style="color: #848e9c; font-size: 13px;">BTC/USDT 永续</div>
+            <div id="price-val" class="price-live">---</div>
+        </div>
+        <div style="text-align: right;">
+            <div style="color: #848e9c; font-size: 13px;">我的余额</div>
+            <div style="font-size: 18px; font-weight: bold;">10,000.00 <span style="font-size:12px; color:var(--gold)">USDT</span></div>
+        </div>
+    </div>
+
+    <div id="chart-wrap">
+        <canvas id="mainChart"></canvas>
+    </div>
+
+    <div class="controls">
+        <div class="lev-selector">
+            <button class="lev-btn" onclick="setLev(this, 10)">10x</button>
+            <button class="lev-btn" onclick="setLev(this, 50)">50x</button>
+            <button class="lev-btn active" onclick="setLev(this, 100)">100x</button>
+            <button class="lev-btn" onclick="setLev(this, 125)">125x</button>
+        </div>
+        <div class="trade-btns">
+            <button class="btn btn-up" onclick="executeTrade('up')">买入/看涨</button>
+            <button class="btn btn-down" onclick="executeTrade('down')">卖出/看跌</button>
+        </div>
+    </div>
+</div>
+
+<div id="result-modal">
+    <div class="win-box">
+        <div style="color: #848e9c; font-size: 14px;">预测成功 (x100 杠杆)</div>
+        <div id="pnl-display" class="pnl-percent">+0.00%</div>
+        <div style="color: #fff; font-size: 16px;">您获得了 <b>100 USDT</b> 赠金</div>
+        <a href="https://www.coinw.com" class="cta-btn">立即实盘提现</a>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('mainChart');
+    const ctx = canvas.getContext('2d');
+    let candles = [];
+    let lastPrice = 64800 + Math.random()*400;
+    let isLive = false;
+    let userDir = null;
+    let leverage = 100;
+    const MAX_VISIBLE = 40;
+
+    function init() {
+        canvas.width = canvas.offsetWidth * 2;
+        canvas.height = canvas.offsetHeight * 2;
+        ctx.scale(2, 2);
+        
+        // 初始假数据
+        for(let i=0; i<MAX_VISIBLE; i++) {
+            const open = lastPrice;
+            const close = open + (Math.random()-0.48)*60;
+            candles.push({open, close, high: Math.max(open, close)+15, low: Math.min(open, close)-15});
+            lastPrice = close;
+        }
+        
+        connectWS();
+        requestAnimationFrame(renderLoop);
+    }
+
+    function connectWS() {
+        const ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@ticker');
+        ws.onmessage = (e) => {
+            if(userDir) return;
+            const data = JSON.parse(e.data);
+            const p = parseFloat(data.c);
+            isLive = true;
+            updateLogic(p);
+        };
+        ws.onerror = () => isLive = false;
+    }
+
+    function updateLogic(price) {
+        lastPrice = price;
+        document.getElementById('price-val').innerText = price.toFixed(2);
+        document.getElementById('price-val').style.color = price >= candles[candles.length-1].open ? "#00c087" : "#ff3b5b";
+
+        let lastC = candles[candles.length-1];
+        // 每 2 秒生成一个新蜡烛，否则更新最后一根
+        if (Date.now() % 2000 < 30) {
+            candles.shift();
+            candles.push({open: price, close: price, high: price, low: price});
+        } else {
+            lastC.close = price;
+            lastC.high = Math.max(lastC.high, price);
+            lastC.low = Math.min(lastC.low, price);
+        }
+    }
+
+    function renderLoop() {
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        const w = canvas.offsetWidth, h = canvas.offsetHeight;
+        const cW = w / MAX_VISIBLE;
+
+        const visible = candles.slice(-MAX_VISIBLE);
+        const highP = Math.max(...visible.map(c => c.high));
+        const lowP = Math.min(...visible.map(c => c.low));
+        const range = (highP - lowP) || 50;
+        const padding = range * 0.3;
+
+        const getY = (p) => h - ((p - (lowP - padding)) / (range + padding * 2)) * h;
+
+        // 绘制蜡烛
+        visible.forEach((c, i) => {
+            const x = i * cW;
+            const y_o = getY(c.open);
+            const y_c = getY(c.close);
+            ctx.strokeStyle = ctx.fillStyle = c.close >= c.open ? "#00c087" : "#ff3b5b";
+            ctx.beginPath();
+            ctx.moveTo(x + cW/2, getY(c.high));
+            ctx.lineTo(x + cW/2, getY(c.low));
+            ctx.stroke();
+            ctx.fillRect(x + 2, Math.min(y_o, y_c), cW - 4, Math.max(Math.abs(y_o - y_c), 1));
+        });
+
+        // 实时价格线
+        const lastC = visible[visible.length-1];
+        const py = getY(lastC.close);
+        const themeColor = lastC.close >= lastC.open ? "#00c087" : "#ff3b5b";
+        
+        ctx.setLineDash([5, 5]);
+        ctx.strokeStyle = themeColor;
+        ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(w, py); ctx.stroke();
+        ctx.setLineDash([]);
+        
+        ctx.fillStyle = themeColor;
+        ctx.fillRect(w - 65, py - 10, 65, 20);
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 11px monospace";
+        ctx.fillText(lastC.close.toFixed(2), w - 60, py + 4);
+
+        // 如果断网或正在博弈，启用模拟引擎
+        if(!isLive || userDir) {
+            let drift = userDir ? (userDir === 'up' ? 15 : -15) : (Math.random()-0.48)*10;
+            updateLogic(lastPrice + drift);
+        }
+        requestAnimationFrame(renderLoop);
+    }
+
+    function startPlay() {
+        document.getElementById('guide-overlay').style.opacity = '0';
+        setTimeout(() => document.getElementById('guide-overlay').style.display = 'none', 400);
+    }
+
+    function setLev(btn, val) {
+        document.querySelectorAll('.lev-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        leverage = val;
+    }
+
+    function executeTrade(dir) {
+        userDir = dir;
+        // 5秒后弹出必赢结算
+        setTimeout(() => {
+            const pnl = (Math.random() * 5 + 5) * leverage;
+            document.getElementById('pnl-display').innerText = `+${pnl.toFixed(2)}%`;
+            document.getElementById('result-modal').style.display = 'flex';
+        }, 4000);
+    }
+
+    window.onload = init;
+</script>
+</body>
+</html>
