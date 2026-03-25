@@ -3,30 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CoinW 极速挑战 Pro</title>
+    <title>CoinW 极速挑战 v3.0</title>
     <style>
-        :root { --up: #00c087; --down: #ff3b5b; --gold: #f0b90b; --bg: #0b0e11; --panel: #1e2329; --grid: rgba(255,255,255,0.05); }
+        :root { --up: #00c087; --down: #ff3b5b; --gold: #f0b90b; --bg: #0b0e11; --panel: #1e2329; }
         body { margin: 0; background: var(--bg); font-family: -apple-system, system-ui, sans-serif; color: #fff; overflow: hidden; touch-action: manipulation; }
-        
-        #app { height: 100vh; display: flex; flex-direction: column; padding: 15px; box-sizing: border-box; }
-        .header { display: flex; justify-content: space-between; align-items: center; height: 60px; }
-        .price-live { font-family: 'Courier New', monospace; font-size: 28px; font-weight: bold; }
-        
-        #chart-wrap { flex: 1; position: relative; width: 100%; margin: 10px 0; border-top: 1px solid var(--grid); border-bottom: 1px solid var(--grid); }
-        canvas { width: 100% !important; height: 100% !important; }
-
-        .controls { padding-bottom: env(safe-area-inset-bottom); }
-        .lev-selector { display: flex; gap: 8px; margin-bottom: 15px; }
-        .lev-btn { flex: 1; background: #2b3139; border: 1px solid transparent; color: #848e9c; padding: 10px 0; border-radius: 4px; font-size: 12px; }
+        #app { height: 100vh; display: flex; flex-direction: column; padding: 12px; box-sizing: border-box; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .price-live { font-family: 'Courier New', monospace; font-size: 30px; font-weight: bold; min-width: 120px; }
+        #chart-wrap { flex: 1; position: relative; margin: 5px 0; background: radial-gradient(circle at center, #1a1e23 0%, #0b0e11 100%); }
+        canvas { width: 100% !important; height: 100% !important; display: block; }
+        .controls { padding: 10px 0; }
+        .lev-selector { display: flex; gap: 6px; margin-bottom: 12px; }
+        .lev-btn { flex: 1; background: #2b3139; border: 1px solid transparent; color: #848e9c; padding: 8px 0; border-radius: 4px; font-size: 12px; }
         .lev-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(240,185,11,0.1); }
-        
-        .trade-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .btn { height: 50px; border: none; border-radius: 6px; color: #fff; font-size: 16px; font-weight: bold; }
+        .trade-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn { height: 48px; border: none; border-radius: 6px; color: #fff; font-size: 16px; font-weight: bold; cursor: pointer; }
         .btn-up { background: var(--up); }
         .btn-down { background: var(--down); }
-        
-        #result-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000; align-items: center; justify-content: center; }
-        .win-box { background: var(--panel); width: 80%; padding: 30px; border-radius: 12px; text-align: center; border: 1px solid var(--gold); }
+        #result-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 2000; align-items: center; justify-content: center; }
+        .win-box { background: var(--panel); width: 80%; padding: 30px; border-radius: 16px; text-align: center; border: 1px solid var(--gold); box-shadow: 0 0 30px rgba(240,185,11,0.2); }
         .pnl-percent { font-size: 48px; font-weight: bold; color: var(--up); margin: 10px 0; }
         .cta-btn { background: var(--gold); color: #000; display: block; padding: 14px; border-radius: 25px; text-decoration: none; font-weight: bold; margin-top: 20px; }
     </style>
@@ -40,8 +35,8 @@
             <div id="price-val" class="price-live">0.00</div>
         </div>
         <div style="text-align: right;">
-            <div style="color: #848e9c; font-size: 12px;">账户余额</div>
-            <div style="font-size: 16px; font-weight: bold;">10,000.00 <span style="font-size:10px; color:var(--gold)">USDT</span></div>
+            <div style="color: #848e9c; font-size: 11px; opacity: 0.7;">可用余额</div>
+            <div style="font-size: 16px; font-weight: 700;">10,000.00 <span style="font-size:10px; color:var(--gold)">USDT</span></div>
         </div>
     </div>
 
@@ -65,8 +60,9 @@
 
 <div id="result-modal">
     <div class="win-box">
-        <div style="color: #848e9c; font-size: 14px;">挑战成功</div>
+        <div style="color: #848e9c; font-size: 14px;">预测成功</div>
         <div id="pnl-display" class="pnl-percent">+0.00%</div>
+        <div style="font-size: 14px; color: #fff;">奖励已发放到您的实盘账户</div>
         <a href="#" class="cta-btn" onclick="location.reload()">再次挑战</a>
     </div>
 </div>
@@ -76,10 +72,13 @@
     const ctx = canvas.getContext('2d');
     let candles = [];
     let lastPrice = 0;
-    let isLive = false;
     let isUserTrading = false;
     let leverage = 100;
-    const MAX_VISIBLE = 50; // 增加显示数量，让K线看起来更细长专业
+    const MAX_VISIBLE = 45; 
+    
+    // 平滑缩放变量
+    let currentViewMax = 0;
+    let currentViewMin = 0;
 
     function init() {
         const dpr = window.devicePixelRatio || 1;
@@ -88,15 +87,18 @@
         canvas.height = rect.height * dpr;
         ctx.scale(dpr, dpr);
 
-        // 初始化伪造一些平稳数据
-        let base = 66000;
+        let base = 65000;
         for(let i=0; i<MAX_VISIBLE; i++) {
-            let o = base + (Math.random()-0.5)*20;
-            let c = o + (Math.random()-0.5)*20;
-            candles.push({open: o, close: c, high: Math.max(o,c)+5, low: Math.min(o,c)-5});
+            let o = base + (Math.random()-0.5)*30;
+            let c = o + (Math.random()-0.5)*30;
+            candles.push({open: o, close: c, high: Math.max(o,c)+10, low: Math.min(o,c)-10});
             base = c;
         }
         lastPrice = base;
+        
+        // 初始缩放值
+        currentViewMax = Math.max(...candles.map(c=>c.high)) + 20;
+        currentViewMin = Math.min(...candles.map(c=>c.low)) - 20;
 
         connectWS();
         render();
@@ -107,7 +109,6 @@
         ws.onmessage = (e) => {
             const data = JSON.parse(e.data);
             const price = parseFloat(data.c);
-            isLive = true;
             if(!isUserTrading) updateLogic(price);
         };
         ws.onclose = () => setTimeout(connectWS, 2000);
@@ -118,8 +119,8 @@
         document.getElementById('price-val').innerText = price.toFixed(2);
         
         let lastC = candles[candles.length - 1];
-        // 模拟步进逻辑：每隔几次数据生成新K线
-        if (Math.random() > 0.92) {
+        // 每秒大概更新一次新K线
+        if (Math.random() > 0.94) {
             candles.shift();
             candles.push({open: lastC.close, close: price, high: price, low: price});
         } else {
@@ -133,27 +134,31 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         const w = canvas.offsetWidth;
         const h = canvas.offsetHeight;
+
+        // --- 核心改进：平滑缩放算法 ---
+        const realMax = Math.max(...candles.map(c => c.high));
+        const realMin = Math.min(...candles.map(c => c.low));
+        const diff = Math.max(realMax - realMin, 40); // 确保最小波幅不低于40刀
         
-        // 计算价格区间并增加 30% 的上下边距
-        const prices = candles.flatMap(c => [c.high, c.low]);
-        const maxP = Math.max(...prices);
-        const minP = Math.min(...prices);
-        const diff = maxP - minP;
-        const viewMax = maxP + diff * 0.3; // 关键：增加顶部空间
-        const viewMin = minP - diff * 0.3; // 关键：增加底部空间
-        
-        const getY = (p) => h - ((p - viewMin) / (viewMax - viewMin)) * h;
+        const targetMax = realMax + diff * 0.4;
+        const targetMin = realMin - diff * 0.4;
+
+        // 线性插值 (LERP)，每帧向目标靠拢 10%，消除跳动
+        currentViewMax += (targetMax - currentViewMax) * 0.1;
+        currentViewMin += (targetMin - currentViewMin) * 0.1;
+
+        const getY = (p) => h - ((p - currentViewMin) / (currentViewMax - currentViewMin)) * h;
         const cW = w / MAX_VISIBLE;
 
-        // 绘制网格线
-        ctx.strokeStyle = "rgba(255,255,255,0.05)";
-        ctx.lineWidth = 1;
-        for(let i=1; i<5; i++) {
-            let gy = (h / 5) * i;
+        // 绘制背景参考线
+        ctx.strokeStyle = "rgba(255,255,255,0.04)";
+        ctx.setLineDash([]);
+        for(let i=1; i<6; i++) {
+            let gy = (h / 6) * i;
             ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
         }
 
-        // 绘制 K 线
+        // 绘制K线
         candles.forEach((c, i) => {
             const x = i * cW;
             const yO = getY(c.open);
@@ -161,27 +166,34 @@
             const color = c.close >= c.open ? "#00c087" : "#ff3b5b";
             
             ctx.strokeStyle = ctx.fillStyle = color;
+            ctx.lineWidth = 1.5;
             // 影线
             ctx.beginPath();
             ctx.moveTo(x + cW/2, getY(c.high));
             ctx.lineTo(x + cW/2, getY(c.low));
             ctx.stroke();
             // 实体
-            const bodyH = Math.max(Math.abs(yO - yC), 1);
-            ctx.fillRect(x + 1, Math.min(yO, yC), cW - 2, bodyH);
+            const rectH = Math.max(Math.abs(yO - yC), 1);
+            ctx.fillRect(x + 2, Math.min(yO, yC), cW - 4, rectH);
         });
 
-        // 绘制当前价格横线
+        // 绘制实时价格线
         const curY = getY(lastPrice);
-        ctx.setLineDash([5, 5]);
-        ctx.strokeStyle = lastPrice >= candles[candles.length-1].open ? "#00c087" : "#ff3b5b";
-        ctx.beginPath(); ctx.moveTo(0, curY); ctx.lineTo(w, curY); ctx.stroke();
+        ctx.setLineDash([4, 3]);
+        ctx.strokeStyle = "rgba(255,255,255,0.5)";
+        ctx.beginPath(); ctx.moveTo(0, curY); ctx.lineTo(w - 50, curY); ctx.stroke();
+        
+        // 价格标签
         ctx.setLineDash([]);
+        ctx.fillStyle = lastPrice >= candles[candles.length-1].open ? "#00c087" : "#ff3b5b";
+        ctx.fillRect(w - 55, curY - 9, 55, 18);
+        ctx.fillStyle = "#fff";
+        ctx.font = "10px Arial";
+        ctx.fillText(lastPrice.toFixed(1), w - 50, curY + 4);
 
-        // 模拟博弈漂移
         if(isUserTrading) {
-            let move = (Math.random() * 2) * (window._dir === 'up' ? 1 : -1);
-            updateLogic(lastPrice + move);
+            let speed = (Math.random() * 3) * (window._dir === 'up' ? 1 : -1);
+            updateLogic(lastPrice + speed);
         }
 
         requestAnimationFrame(render);
@@ -198,10 +210,10 @@
         isUserTrading = true;
         window._dir = dir;
         setTimeout(() => {
-            const pnl = (Math.random() * 5 + 2) * leverage;
+            const pnl = (Math.random() * 8 + 5) * leverage;
             document.getElementById('pnl-display').innerText = `+${pnl.toFixed(2)}%`;
             document.getElementById('result-modal').style.display = 'flex';
-        }, 4000);
+        }, 3500);
     }
 
     window.onload = init;
