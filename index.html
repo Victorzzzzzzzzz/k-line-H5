@@ -3,27 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CoinW 极速挑战 v3.0</title>
+    <title>CoinW 极速挑战 - 稳定版</title>
     <style>
         :root { --up: #00c087; --down: #ff3b5b; --gold: #f0b90b; --bg: #0b0e11; --panel: #1e2329; }
         body { margin: 0; background: var(--bg); font-family: -apple-system, system-ui, sans-serif; color: #fff; overflow: hidden; touch-action: manipulation; }
         #app { height: 100vh; display: flex; flex-direction: column; padding: 12px; box-sizing: border-box; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .price-live { font-family: 'Courier New', monospace; font-size: 30px; font-weight: bold; min-width: 120px; }
-        #chart-wrap { flex: 1; position: relative; margin: 5px 0; background: radial-gradient(circle at center, #1a1e23 0%, #0b0e11 100%); }
-        canvas { width: 100% !important; height: 100% !important; display: block; }
-        .controls { padding: 10px 0; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .price-live { font-family: 'Courier New', monospace; font-size: 28px; font-weight: bold; }
+        #chart-wrap { flex: 1; position: relative; margin-bottom: 10px; }
+        canvas { width: 100% !important; height: 100% !important; }
+        .controls { padding: 10px 0; border-top: 1px solid rgba(255,255,255,0.05); }
         .lev-selector { display: flex; gap: 6px; margin-bottom: 12px; }
-        .lev-btn { flex: 1; background: #2b3139; border: 1px solid transparent; color: #848e9c; padding: 8px 0; border-radius: 4px; font-size: 12px; }
+        .lev-btn { flex: 1; background: #2b3139; border: 1px solid transparent; color: #848e9c; padding: 10px 0; border-radius: 4px; font-size: 12px; }
         .lev-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(240,185,11,0.1); }
         .trade-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .btn { height: 48px; border: none; border-radius: 6px; color: #fff; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .btn { height: 50px; border: none; border-radius: 6px; color: #fff; font-size: 16px; font-weight: bold; }
         .btn-up { background: var(--up); }
         .btn-down { background: var(--down); }
         #result-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 2000; align-items: center; justify-content: center; }
-        .win-box { background: var(--panel); width: 80%; padding: 30px; border-radius: 16px; text-align: center; border: 1px solid var(--gold); box-shadow: 0 0 30px rgba(240,185,11,0.2); }
-        .pnl-percent { font-size: 48px; font-weight: bold; color: var(--up); margin: 10px 0; }
-        .cta-btn { background: var(--gold); color: #000; display: block; padding: 14px; border-radius: 25px; text-decoration: none; font-weight: bold; margin-top: 20px; }
+        .win-box { background: var(--panel); width: 80%; padding: 30px; border-radius: 16px; text-align: center; border: 1px solid var(--gold); }
     </style>
 </head>
 <body>
@@ -31,11 +29,11 @@
 <div id="app">
     <div class="header">
         <div>
-            <div style="color: #848e9c; font-size: 12px;">BTC/USDT 永续</div>
-            <div id="price-val" class="price-live">0.00</div>
+            <div style="color: #848e9c; font-size: 12px;">BTC/USDT 永续 (1m)</div>
+            <div id="price-val" class="price-live">加载中...</div>
         </div>
         <div style="text-align: right;">
-            <div style="color: #848e9c; font-size: 11px; opacity: 0.7;">可用余额</div>
+            <div style="color: #848e9c; font-size: 11px;">模拟余额</div>
             <div style="font-size: 16px; font-weight: 700;">10,000.00 <span style="font-size:10px; color:var(--gold)">USDT</span></div>
         </div>
     </div>
@@ -46,7 +44,6 @@
 
     <div class="controls">
         <div class="lev-selector">
-            <button class="lev-btn" onclick="setLev(this, 20)">20x</button>
             <button class="lev-btn" onclick="setLev(this, 50)">50x</button>
             <button class="lev-btn active" onclick="setLev(this, 100)">100x</button>
             <button class="lev-btn" onclick="setLev(this, 125)">125x</button>
@@ -60,10 +57,9 @@
 
 <div id="result-modal">
     <div class="win-box">
-        <div style="color: #848e9c; font-size: 14px;">预测成功</div>
-        <div id="pnl-display" class="pnl-percent">+0.00%</div>
-        <div style="font-size: 14px; color: #fff;">奖励已发放到您的实盘账户</div>
-        <a href="#" class="cta-btn" onclick="location.reload()">再次挑战</a>
+        <div style="color: #848e9c; font-size: 14px;">盈利结算</div>
+        <div id="pnl-display" style="font-size: 48px; font-weight: bold; color: var(--up); margin: 10px 0;">+0.00%</div>
+        <button class="btn btn-up" style="width: 100%; border-radius: 25px;" onclick="location.reload()">继续挑战</button>
     </div>
 </div>
 
@@ -74,59 +70,71 @@
     let lastPrice = 0;
     let isUserTrading = false;
     let leverage = 100;
-    const MAX_VISIBLE = 45; 
-    
-    // 平滑缩放变量
-    let currentViewMax = 0;
-    let currentViewMin = 0;
+    const MAX_VISIBLE = 60; // 显示60根K线，代表1小时左右的视觉范围
 
-    function init() {
+    async function init() {
+        // 1. 适配高清屏
         const dpr = window.devicePixelRatio || 1;
         const rect = canvas.getBoundingClientRect();
         canvas.width = rect.width * dpr;
         canvas.height = rect.height * dpr;
         ctx.scale(dpr, dpr);
 
-        let base = 65000;
-        for(let i=0; i<MAX_VISIBLE; i++) {
-            let o = base + (Math.random()-0.5)*30;
-            let c = o + (Math.random()-0.5)*30;
+        // 2. 获取过去3小时的历史真实数据 (使用币安公共API)
+        // interval=1m (1分钟线), limit=80 (获取80个点)
+        try {
+            const response = await fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=80');
+            const data = await response.json();
+            candles = data.map(d => ({
+                open: parseFloat(d[1]),
+                high: parseFloat(d[2]),
+                low: parseFloat(d[3]),
+                close: parseFloat(d[4])
+            }));
+            lastPrice = candles[candles.length - 1].close;
+        } catch (e) {
+            // 如果API报错，生成一组假数据兜底
+            console.error("API获取失败，切换至演示模式");
+            generateFallbackData();
+        }
+
+        render();
+        // 启动模拟波动逻辑，每秒更新一次，不再依赖网络推送
+        setInterval(simulateTicker, 1000);
+    }
+
+    function generateFallbackData() {
+        let base = 68000;
+        for(let i=0; i<80; i++) {
+            let o = base + (Math.random()-0.5)*40;
+            let c = o + (Math.random()-0.5)*40;
             candles.push({open: o, close: c, high: Math.max(o,c)+10, low: Math.min(o,c)-10});
             base = c;
         }
         lastPrice = base;
+    }
+
+    function simulateTicker() {
+        // 模拟价格微小波动 (+- 5刀)
+        let drift = (Math.random() - 0.5) * 10;
         
-        // 初始缩放值
-        currentViewMax = Math.max(...candles.map(c=>c.high)) + 20;
-        currentViewMin = Math.min(...candles.map(c=>c.low)) - 20;
+        // 如果用户在交易，强制让价格往用户选的方向走，确保“必赢”体验
+        if(isUserTrading) {
+            drift = (window._dir === 'up' ? 5 : -5) + (Math.random()*5);
+        }
 
-        connectWS();
-        render();
-    }
-
-    function connectWS() {
-        const ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@ticker');
-        ws.onmessage = (e) => {
-            const data = JSON.parse(e.data);
-            const price = parseFloat(data.c);
-            if(!isUserTrading) updateLogic(price);
-        };
-        ws.onclose = () => setTimeout(connectWS, 2000);
-    }
-
-    function updateLogic(price) {
-        lastPrice = price;
-        document.getElementById('price-val').innerText = price.toFixed(2);
+        lastPrice += drift;
+        document.getElementById('price-val').innerText = lastPrice.toFixed(2);
         
         let lastC = candles[candles.length - 1];
-        // 每秒大概更新一次新K线
-        if (Math.random() > 0.94) {
+        lastC.close = lastPrice;
+        lastC.high = Math.max(lastC.high, lastPrice);
+        lastC.low = Math.min(lastC.low, lastPrice);
+
+        // 每30秒产生一根新K线，防止K线移动过快看起来不自然
+        if (Date.now() % 30000 < 1000) {
             candles.shift();
-            candles.push({open: lastC.close, close: price, high: price, low: price});
-        } else {
-            lastC.close = price;
-            lastC.high = Math.max(lastC.high, price);
-            lastC.low = Math.min(lastC.low, price);
+            candles.push({open: lastPrice, close: lastPrice, high: lastPrice, low: lastPrice});
         }
     }
 
@@ -135,66 +143,49 @@
         const w = canvas.offsetWidth;
         const h = canvas.offsetHeight;
 
-        // --- 核心改进：平滑缩放算法 ---
-        const realMax = Math.max(...candles.map(c => c.high));
-        const realMin = Math.min(...candles.map(c => c.low));
-        const diff = Math.max(realMax - realMin, 40); // 确保最小波幅不低于40刀
+        // 获取当前显示的K线范围
+        const visibleCandles = candles.slice(-MAX_VISIBLE);
+        const maxP = Math.max(...visibleCandles.map(c => c.high));
+        const minP = Math.min(...visibleCandles.map(c => c.low));
+        const diff = maxP - minP;
         
-        const targetMax = realMax + diff * 0.4;
-        const targetMin = realMin - diff * 0.4;
-
-        // 线性插值 (LERP)，每帧向目标靠拢 10%，消除跳动
-        currentViewMax += (targetMax - currentViewMax) * 0.1;
-        currentViewMin += (targetMin - currentViewMin) * 0.1;
-
-        const getY = (p) => h - ((p - currentViewMin) / (currentViewMax - currentViewMin)) * h;
+        // 核心：纵坐标保持20%的上下留白，防止K线撑满屏幕
+        const viewMax = maxP + diff * 0.2;
+        const viewMin = minP - diff * 0.2;
+        
+        const getY = (p) => h - ((p - viewMin) / (viewMax - viewMin)) * h;
         const cW = w / MAX_VISIBLE;
 
-        // 绘制背景参考线
-        ctx.strokeStyle = "rgba(255,255,255,0.04)";
-        ctx.setLineDash([]);
-        for(let i=1; i<6; i++) {
-            let gy = (h / 6) * i;
+        // 绘制辅助网格
+        ctx.strokeStyle = "rgba(255,255,255,0.03)";
+        for(let i=1; i<5; i++) {
+            let gy = (h/5)*i;
             ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
         }
 
-        // 绘制K线
-        candles.forEach((c, i) => {
+        visibleCandles.forEach((c, i) => {
             const x = i * cW;
             const yO = getY(c.open);
             const yC = getY(c.close);
             const color = c.close >= c.open ? "#00c087" : "#ff3b5b";
             
             ctx.strokeStyle = ctx.fillStyle = color;
-            ctx.lineWidth = 1.5;
+            ctx.lineWidth = 1;
             // 影线
             ctx.beginPath();
             ctx.moveTo(x + cW/2, getY(c.high));
             ctx.lineTo(x + cW/2, getY(c.low));
             ctx.stroke();
-            // 实体
-            const rectH = Math.max(Math.abs(yO - yC), 1);
-            ctx.fillRect(x + 2, Math.min(yO, yC), cW - 4, rectH);
+            // 实体 (增加圆角或间距，看起来更精致)
+            ctx.fillRect(x + 2, Math.min(yO, yC), cW - 4, Math.max(Math.abs(yO - yC), 1));
         });
 
-        // 绘制实时价格线
+        // 绘制现价线
         const curY = getY(lastPrice);
-        ctx.setLineDash([4, 3]);
-        ctx.strokeStyle = "rgba(255,255,255,0.5)";
-        ctx.beginPath(); ctx.moveTo(0, curY); ctx.lineTo(w - 50, curY); ctx.stroke();
-        
-        // 价格标签
+        ctx.setLineDash([5, 5]);
+        ctx.strokeStyle = "rgba(255,255,255,0.3)";
+        ctx.beginPath(); ctx.moveTo(0, curY); ctx.lineTo(w, curY); ctx.stroke();
         ctx.setLineDash([]);
-        ctx.fillStyle = lastPrice >= candles[candles.length-1].open ? "#00c087" : "#ff3b5b";
-        ctx.fillRect(w - 55, curY - 9, 55, 18);
-        ctx.fillStyle = "#fff";
-        ctx.font = "10px Arial";
-        ctx.fillText(lastPrice.toFixed(1), w - 50, curY + 4);
-
-        if(isUserTrading) {
-            let speed = (Math.random() * 3) * (window._dir === 'up' ? 1 : -1);
-            updateLogic(lastPrice + speed);
-        }
 
         requestAnimationFrame(render);
     }
@@ -209,11 +200,12 @@
         if(isUserTrading) return;
         isUserTrading = true;
         window._dir = dir;
+        // 模拟5秒后获利
         setTimeout(() => {
-            const pnl = (Math.random() * 8 + 5) * leverage;
+            const pnl = (Math.random() * 5 + 5) * leverage;
             document.getElementById('pnl-display').innerText = `+${pnl.toFixed(2)}%`;
             document.getElementById('result-modal').style.display = 'flex';
-        }, 3500);
+        }, 5000);
     }
 
     window.onload = init;
