@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CoinW 极速合约体验赛</title>
+    <title>CoinW K线大师</title>
     <style>
         :root { --up: #00c087; --down: #ff3b5b; --gold: #f0b90b; --bg: #0b0e11; --panel: #1e2329; }
         body { margin: 0; background: var(--bg); font-family: -apple-system, system-ui, sans-serif; color: #fff; overflow: hidden; touch-action: manipulation; }
@@ -48,7 +48,7 @@
 <!-- 第一页：说明引导 -->
 <div id="guide-overlay">
     <div class="guide-card">
-        <div class="guide-title">CoinW 极速合约</div>
+        <div class="guide-title">CoinW K线大师</div>
         <div class="guide-desc">
             体验 60 秒极速收割行情<br>
             预测 BTC 走势，赢取实盘赠金
@@ -235,7 +235,7 @@
         window._dir = dir;
         orderPrice = lastPrice;
 
-        // 4秒结算动画（模拟极速合约）
+        // 4秒结算动画（K线大师）
         setTimeout(() => {
             const pnl = (Math.random() * 5 + 10) * leverage; // 增加盈利百分比视觉冲击力
             document.getElementById('res-lev').innerText = leverage;
