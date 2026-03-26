@@ -2,74 +2,190 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CoinW K线大师</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>CoinW K线大师 - 极速交易体验</title>
     <style>
-        :root { --up: #00c087; --down: #ff3b5b; --gold: #f0b90b; --bg: #0b0e11; --panel: #1e2329; }
-        body { margin: 0; background: var(--bg); font-family: -apple-system, system-ui, sans-serif; color: #fff; overflow: hidden; touch-action: manipulation; }
-        
-        /* 引导遮罩层 */
-        #guide-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; z-index: 1000; transition: opacity 0.4s; }
-        .guide-card { background: var(--panel); width: 85%; max-width: 350px; padding: 30px 20px; border-radius: 20px; border: 1px solid var(--gold); text-align: center; }
-        .guide-title { color: var(--gold); font-size: 24px; margin-bottom: 10px; font-weight: bold; }
-        .guide-desc { color: #848e9c; font-size: 14px; line-height: 1.6; margin-bottom: 25px; }
-        .feature-tag { display: inline-block; background: rgba(240,185,11,0.1); color: var(--gold); padding: 4px 12px; border-radius: 4px; font-size: 12px; margin: 5px; }
+        :root { 
+            --up: #00c087; 
+            --down: #ff3b5b; 
+            --gold: #f0b90b; 
+            --bg: #0b0e11; 
+            --panel: #1e2329; 
+            --text-main: #ffffff;
+            --text-secondary: #848e9c;
+        }
 
-        #app { height: 100vh; display: flex; flex-direction: column; padding: 15px; box-sizing: border-box; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .price-live { font-family: 'Courier New', monospace; font-size: 32px; font-weight: bold; margin: 5px 0; }
+        /* 基础重置 */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
-        #chart-wrap { flex: 1; position: relative; width: 100%; border-radius: 8px; background: rgba(255,255,255,0.02); }
+        body { 
+            margin: 0; 
+            background: #000; /* Web端大背景 */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            color: var(--text-main); 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden; /* 防止外层滚动 */
+        }
+
+        /* H5 容器：PC端模拟手机，手机端全屏 */
+        #app { 
+            width: 100%;
+            max-width: 450px; /* 模拟手机宽度 */
+            height: 100vh;
+            max-height: 900px; /* 防止Web端过长 */
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+        }
+
+        /* 引导遮罩层 */
+        #guide-overlay { 
+            position: absolute; 
+            inset: 0; 
+            background: rgba(0,0,0,0.9); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            z-index: 1000; 
+            transition: opacity 0.4s; 
+        }
+        .guide-card { 
+            background: var(--panel); 
+            width: 85%; 
+            padding: 30px 20px; 
+            border-radius: 20px; 
+            border: 1px solid var(--gold); 
+            text-align: center; 
+        }
+
+        /* 头部区域 */
+        .header { 
+            padding: 20px 15px 10px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-end;
+        }
+        .price-live { 
+            font-family: 'Courier New', monospace; 
+            font-size: 32px; 
+            font-weight: bold; 
+            line-height: 1.2;
+        }
+
+        /* K线图容器 - 关键：自动占据剩余高度 */
+        #chart-wrap { 
+            flex: 1; 
+            width: 100%; 
+            position: relative; 
+            background: rgba(255,255,255,0.02);
+            margin: 10px 0;
+            min-height: 200px; 
+        }
         canvas { width: 100% !important; height: 100% !important; }
 
-        .controls { padding-top: 15px; }
+        /* 控制区域 */
+        .controls { 
+            padding: 15px; 
+            background: var(--bg);
+            padding-bottom: calc(15px + env(safe-area-inset-bottom)); /* 适配移动端安全区 */
+        }
         .lev-selector { display: flex; gap: 8px; margin-bottom: 15px; }
-        .lev-btn { flex: 1; background: #2b3139; border: 1px solid transparent; color: #848e9c; padding: 10px 0; border-radius: 4px; font-size: 12px; transition: 0.2s; }
+        .lev-btn { 
+            flex: 1; 
+            background: #2b3139; 
+            border: 1px solid transparent; 
+            color: var(--text-secondary); 
+            padding: 12px 0; 
+            border-radius: 6px; 
+            font-size: 13px; 
+            cursor: pointer;
+        }
         .lev-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(240,185,11,0.1); }
         
-        .trade-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding-bottom: 10px; }
-        .btn { height: 55px; border: none; border-radius: 8px; color: #fff; font-size: 18px; font-weight: bold; transition: transform 0.1s; cursor: pointer; }
-        .btn-up { background: var(--up); box-shadow: 0 4px 15px rgba(0,192,135,0.3); }
-        .btn-down { background: var(--down); box-shadow: 0 4px 15px rgba(255,59,91,0.3); }
-        .btn:active { transform: scale(0.95); }
-        
+        .trade-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .btn { 
+            height: 55px; 
+            border: none; 
+            border-radius: 8px; 
+            color: #fff; 
+            font-size: 16px; 
+            font-weight: bold; 
+            cursor: pointer;
+        }
+        .btn-up { background: var(--up); box-shadow: 0 4px 12px rgba(0,192,135,0.2); }
+        .btn-down { background: var(--down); box-shadow: 0 4px 12px rgba(255,59,91,0.2); }
+        .btn:active { opacity: 0.8; transform: scale(0.98); }
+
         /* 结算弹窗 */
-        #result-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 2000; align-items: center; justify-content: center; }
-        .win-box { background: var(--panel); width: 85%; max-width: 320px; padding: 40px 20px; border-radius: 24px; text-align: center; border: 1px solid var(--gold); position: relative; }
-        .pnl-percent { font-size: 56px; font-weight: bold; color: var(--up); margin: 10px 0; text-shadow: 0 0 20px rgba(0,192,135,0.4); }
+        #result-modal { 
+            display: none; 
+            position: absolute; 
+            inset: 0; 
+            background: rgba(0,0,0,0.9); 
+            z-index: 2000; 
+            align-items: center; 
+            justify-content: center; 
+        }
+        .win-box { 
+            background: var(--panel); 
+            width: 85%; 
+            padding: 40px 20px; 
+            border-radius: 24px; 
+            text-align: center; 
+            border: 1px solid var(--gold); 
+        }
+        .pnl-percent { font-size: 52px; font-weight: bold; color: var(--up); margin: 15px 0; }
         
-        /* 最终跳转按钮 */
-        .cta-btn { background: var(--gold); color: #000; display: block; padding: 18px; border-radius: 35px; text-decoration: none; font-weight: bold; margin-top: 25px; font-size: 18px; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(240,185,11,0.7); } 70% { box-shadow: 0 0 0 15px rgba(240,185,11,0); } 100% { box-shadow: 0 0 0 0 rgba(240,185,11,0); } }
+        .cta-btn { 
+            background: var(--gold); 
+            color: #000; 
+            display: block; 
+            padding: 16px; 
+            border-radius: 30px; 
+            text-decoration: none; 
+            font-weight: bold; 
+            margin-top: 20px; 
+            animation: pulse 2s infinite; 
+        }
+
+        @keyframes pulse { 
+            0% { box-shadow: 0 0 0 0 rgba(240,185,11,0.6); } 
+            70% { box-shadow: 0 0 0 15px rgba(240,185,11,0); } 
+            100% { box-shadow: 0 0 0 0 rgba(240,185,11,0); } 
+        }
+
+        @media (max-width: 500px) {
+            #app { max-height: 100vh; border-radius: 0; }
+        }
     </style>
 </head>
 <body>
 
-<!-- 第一页：说明引导 -->
-<div id="guide-overlay">
-    <div class="guide-card">
-        <div class="guide-title">CoinW K线大师</div>
-        <div class="guide-desc">
-            体验 60 秒极速收割行情<br>
-            预测 BTC 走势，赢取实盘赠金
-        </div>
-        <div>
-            <span class="feature-tag">125x 杠杆</span>
-            <span class="feature-tag">秒级结算</span>
-            <span class="feature-tag">零门槛体验</span>
-        </div>
-        <button class="cta-btn" style="width: 100%; border:none;" onclick="startPlay()">立即开始挑战</button>
-    </div>
-</div>
-
 <div id="app">
+    <!-- 引导页 -->
+    <div id="guide-overlay">
+        <div class="guide-card">
+            <div style="color:var(--gold); font-size: 26px; font-weight:bold; margin-bottom:10px;">CoinW K线大师</div>
+            <div style="color:var(--text-secondary); font-size: 14px; line-height:1.6; margin-bottom:25px;">
+                体验 60 秒极速收割行情<br>预测 BTC 走势，赢取实盘赠金
+            </div>
+            <button class="cta-btn" style="width: 100%; border:none; cursor:pointer;" onclick="startPlay()">立即开始挑战</button>
+        </div>
+    </div>
+
+    <!-- 主界面 -->
     <div class="header">
         <div>
-            <div style="color: #848e9c; font-size: 12px;">BTC/USDT 永续 · 1m</div>
-            <div id="price-val" class="price-live">加载中...</div>
+            <div style="color: var(--text-secondary); font-size: 12px; margin-bottom:4px;">BTC/USDT 永续 · 1m</div>
+            <div id="price-val" class="price-live">------</div>
         </div>
         <div style="text-align: right;">
-            <div style="color: #848e9c; font-size: 12px;">体验金余额</div>
+            <div style="color: var(--text-secondary); font-size: 12px;">体验金余额</div>
             <div style="font-size: 18px; font-weight: bold;">10,000.00 <span style="font-size:12px; color:var(--gold)">USDT</span></div>
         </div>
     </div>
@@ -89,16 +205,16 @@
             <button class="btn btn-down" onclick="executeTrade('down')">卖出看跌</button>
         </div>
     </div>
-</div>
 
-<!-- 结果页：点击跳转 CoinW -->
-<div id="result-modal">
-    <div class="win-box">
-        <div style="color: #848e9c; font-size: 14px;">预测成功 (杠杆 x<span id="res-lev">100</span>)</div>
-        <div id="pnl-display" class="pnl-percent">+0.00%</div>
-        <div style="color: #fff; font-size: 15px; opacity: 0.8;">奖励已就绪，请前往实盘账户查收</div>
-        <a href="https://www.coinw.com" class="cta-btn">前往领取我的奖励</a>
-        <p style="font-size: 11px; color: #848e9c; margin-top: 15px;">* 仅限通过此活动页注册的用户</p>
+    <!-- 结果页 -->
+    <div id="result-modal">
+        <div class="win-box">
+            <div style="color: var(--text-secondary); font-size: 14px;">预测成功 (杠杆 x<span id="res-lev">100</span>)</div>
+            <div id="pnl-display" class="pnl-percent">+0.00%</div>
+            <div style="color: #fff; font-size: 15px; opacity: 0.8;">奖励已就绪，请前往实盘账户查收</div>
+            <a href="https://www.coinw.com" class="cta-btn">前往领取我的奖励</a>
+            <p style="font-size: 11px; color: var(--text-secondary); margin-top: 15px;">* 仅限通过此活动页注册的用户</p>
+        </div>
     </div>
 </div>
 
@@ -109,18 +225,24 @@
     let lastPrice = 0;
     let isUserTrading = false;
     let leverage = 100;
-    const MAX_VISIBLE = 60; // 固定展示过去1小时数据
+    const MAX_VISIBLE = 60; 
     let orderPrice = null;
 
-    async function init() {
+    // 响应式画布初始化
+    function initCanvas() {
         const dpr = window.devicePixelRatio || 1;
-        const rect = canvas.getBoundingClientRect();
+        const rect = canvas.parentElement.getBoundingClientRect();
         canvas.width = rect.width * dpr;
         canvas.height = rect.height * dpr;
         ctx.scale(dpr, dpr);
+    }
 
-        // 获取过去1小时真实K线
+    async function init() {
+        initCanvas();
+        window.addEventListener('resize', initCanvas);
+
         try {
+            // 获取真实行情
             const res = await fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=60');
             const data = await res.json();
             candles = data.map(d => ({
@@ -137,26 +259,26 @@
     }
 
     function generateFakeData() {
-        let base = 68000;
+        let base = 68500;
         for(let i=0; i<MAX_VISIBLE; i++) {
-            let o = base + (Math.random()-0.5)*30;
-            let c = o + (Math.random()-0.5)*30;
-            candles.push({open: o, close: c, high: Math.max(o,c)+10, low: Math.min(o,c)-10});
+            let o = base + (Math.random()-0.5)*40;
+            let c = o + (Math.random()-0.5)*40;
+            candles.push({open: o, close: c, high: Math.max(o,c)+15, low: Math.min(o,c)-15});
             base = c;
         }
         lastPrice = base;
     }
 
     function localHighFreqSim() {
-        let drift = (Math.random() - 0.5) * 8;
+        let drift = (Math.random() - 0.5) * 10;
         if(isUserTrading) {
-            // 确保盈利方向：买涨则价格上漂，买跌则下漂
-            drift = (window._dir === 'up' ? 3 : -3) + (Math.random()-0.5)*6;
+            // 策略逻辑：让用户感受到“精准预测”的盈利快感
+            drift = (window._dir === 'up' ? 4 : -4) + (Math.random()-0.5)*8;
         }
         lastPrice += drift;
         
         const priceEl = document.getElementById('price-val');
-        priceEl.innerText = lastPrice.toFixed(2);
+        priceEl.innerText = lastPrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
         priceEl.style.color = drift >= 0 ? "var(--up)" : "var(--down)";
 
         let lastC = candles[candles.length - 1];
@@ -164,7 +286,8 @@
         lastC.high = Math.max(lastC.high, lastPrice);
         lastC.low = Math.min(lastC.low, lastPrice);
 
-        if (Math.random() > 0.99) {
+        // 模拟K线推进
+        if (Math.random() > 0.98) {
             candles.shift();
             candles.push({open: lastPrice, close: lastPrice, high: lastPrice, low: lastPrice});
         }
@@ -179,44 +302,47 @@
         const highP = Math.max(...candles.map(c => c.high));
         const lowP = Math.min(...candles.map(c => c.low));
         const diff = (highP - lowP) || 100;
-        const viewMax = highP + diff * 0.25;
-        const viewMin = lowP - diff * 0.25;
+        const viewMax = highP + diff * 0.2;
+        const viewMin = lowP - diff * 0.2;
         const getY = (p) => h - ((p - viewMin) / (viewMax - viewMin)) * h;
 
-        // K线绘制
+        // 绘制K线
         candles.forEach((c, i) => {
             const x = i * cW;
             const y_o = getY(c.open);
             const y_c = getY(c.close);
             const color = c.close >= c.open ? "#00c087" : "#ff3b5b";
+            
             ctx.strokeStyle = ctx.fillStyle = color;
+            ctx.lineWidth = 1;
+            // 影线
             ctx.beginPath();
             ctx.moveTo(x + cW/2, getY(c.high));
             ctx.lineTo(x + cW/2, getY(c.low));
             ctx.stroke();
-            ctx.fillRect(x + 2, Math.min(y_o, y_c), cW - 4, Math.max(Math.abs(y_o - y_c), 1.5));
+            // 实体
+            const bodyH = Math.max(Math.abs(y_o - y_c), 2);
+            ctx.fillRect(x + 3, Math.min(y_o, y_c), cW - 6, bodyH);
         });
 
-        // 下单基准线
-        if(isUserTrading && orderPrice) {
-            const oy = getY(orderPrice);
-            ctx.setLineDash([3, 3]);
-            ctx.strokeStyle = "rgba(255,255,255,0.8)";
-            ctx.beginPath(); ctx.moveTo(0, oy); ctx.lineTo(w, oy); ctx.stroke();
-            ctx.fillStyle = "#fff";
-            ctx.font = "10px sans-serif";
-            ctx.fillText("我的持仓价", 10, oy - 5);
-        }
-
-        // 现价虚线
+        // 现价线
         const lastY = getY(lastPrice);
-        ctx.setLineDash([5, 5]);
-        ctx.strokeStyle = "rgba(255,255,255,0.3)";
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = "rgba(255,255,255,0.2)";
         ctx.beginPath(); ctx.moveTo(0, lastY); ctx.lineTo(w, lastY); ctx.stroke();
         ctx.setLineDash([]);
 
+        // 持仓价基准线
+        if(isUserTrading && orderPrice) {
+            const oy = getY(orderPrice);
+            ctx.strokeStyle = varProp('--gold');
+            ctx.beginPath(); ctx.moveTo(0, oy); ctx.lineTo(w, oy); ctx.stroke();
+        }
+
         requestAnimationFrame(render);
     }
+
+    function varProp(name) { return getComputedStyle(document.documentElement).getPropertyValue(name); }
 
     function startPlay() {
         document.getElementById('guide-overlay').style.opacity = '0';
@@ -235,9 +361,10 @@
         window._dir = dir;
         orderPrice = lastPrice;
 
-        // 4秒结算动画（K线大师）
+        // 4秒结算逻辑
         setTimeout(() => {
-            const pnl = (Math.random() * 5 + 10) * leverage; // 增加盈利百分比视觉冲击力
+            const baseWin = Math.random() * 2 + 5; 
+            const pnl = baseWin * leverage;
             document.getElementById('res-lev').innerText = leverage;
             document.getElementById('pnl-display').innerText = `+${pnl.toFixed(2)}%`;
             document.getElementById('result-modal').style.display = 'flex';
